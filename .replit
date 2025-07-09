@@ -1,13 +1,4 @@
+run = "python main.py"
+
 [nix]
-channel = "stable-24_05"
-
-[workflows]
-
-[[workflows.workflow]]
-name = "Run"
-author = 44588950
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python ejercicio1.py"
+packages = ["nano"]
