@@ -1,4 +1,4 @@
-🍃 GRUPO TARANTINO
+# 🍃 GRUPO TARANTINO
 
 > Repositorio grupal para la materia PROGRAMACION II.
 
