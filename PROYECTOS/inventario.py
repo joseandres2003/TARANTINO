@@ -116,6 +116,12 @@ def resumen():
         f"Productos con bajo stock (<10): {bajo_stock}\n\n"
         "Historial de actividades recientes:\n\n" + "\n".join(historial[-10:])
     )
+
+    fecha_resumen = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    nombre_resumen = f"resumen_{fecha_resumen}.txt"
+    with open(nombre_resumen, 'w') as f:
+        f.write(resumen_text)
+
     messagebox.showinfo("Resumen del sistema", resumen_text)
 
 def agregar_al_carrito():
@@ -180,6 +186,12 @@ def confirmar_venta():
         texto_factura += f"{item['cantidad']} x {item['nombre']} @ {item['precio']} = {item['total']}\n"
         registrar_historial(f"Venta: {item['cantidad']} x {item['nombre']} (SKU: {item['sku']})")
     texto_factura += f"\nTOTAL: ${total_general:.2f}"
+
+    fecha_factura = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    nombre_archivo = f"factura_{fecha_factura}.txt"
+    with open(nombre_archivo, 'w') as f:
+        f.write(texto_factura)
+
     carrito.clear()
     actualizar_tabla()
     actualizar_carrito()
@@ -214,128 +226,108 @@ def trasladar_producto():
                 messagebox.showerror("Stock insuficiente", "No hay suficiente stock para trasladar.")
                 return
     messagebox.showerror("Producto no encontrado", "SKU no encontrado.")
-
 # ====================
-# INTERFAZ
+# INTERFAZ GRÁFICA
 # ====================
-cargar_datos()
-
 root = tk.Tk()
-root.title("Sistema de Inventario Empresarial")
-root.geometry("980x720")
-root.protocol("WM_DELETE_WINDOW", lambda: (guardar_datos(), root.destroy()))
+root.title("Sistema de Inventario")
 
 notebook = ttk.Notebook(root)
 notebook.pack(fill='both', expand=True)
 
-# --- GESTIÓN DE INVENTARIO ---
+# --------------------
+# Pestaña: Inventario
+# --------------------
 frame_inventario = ttk.Frame(notebook)
-notebook.add(frame_inventario, text="Gestión de Inventario")
+notebook.add(frame_inventario, text="Inventario")
 
-# --- Entradas y botones de Gestión de Inventario ---
+tk.Label(frame_inventario, text="SKU").grid(row=0, column=0)
+tk.Label(frame_inventario, text="Nombre").grid(row=0, column=1)
+tk.Label(frame_inventario, text="Precio").grid(row=0, column=2)
+tk.Label(frame_inventario, text="Stock").grid(row=0, column=3)
+tk.Label(frame_inventario, text="Sucursal").grid(row=0, column=4)
 
-tk.Label(frame_inventario, text="SKU").grid(row=0, column=0, sticky="w")
 sku_entry = tk.Entry(frame_inventario)
-sku_entry.grid(row=0, column=1)
-
-tk.Label(frame_inventario, text="Nombre").grid(row=1, column=0, sticky="w")
 nombre_entry = tk.Entry(frame_inventario)
-nombre_entry.grid(row=1, column=1)
-
-tk.Label(frame_inventario, text="Precio").grid(row=2, column=0, sticky="w")
 precio_entry = tk.Entry(frame_inventario)
-precio_entry.grid(row=2, column=1)
-
-tk.Label(frame_inventario, text="Stock").grid(row=3, column=0, sticky="w")
 stock_entry = tk.Entry(frame_inventario)
-stock_entry.grid(row=3, column=1)
+sucursal_entry = ttk.Combobox(frame_inventario, values=sucursales)
 
-tk.Label(frame_inventario, text="Sucursal").grid(row=4, column=0, sticky="w")
-sucursal_entry = ttk.Combobox(frame_inventario, values=sucursales[1:])
-sucursal_entry.grid(row=4, column=1)
+sku_entry.grid(row=1, column=0)
+nombre_entry.grid(row=1, column=1)
+precio_entry.grid(row=1, column=2)
+stock_entry.grid(row=1, column=3)
+sucursal_entry.grid(row=1, column=4)
 
-tk.Button(frame_inventario, text="Agregar Producto", command=agregar_producto).grid(row=5, column=1, pady=5)
-tk.Button(frame_inventario, text="Eliminar Producto", command=eliminar_producto).grid(row=5, column=2, pady=5)
+tk.Button(frame_inventario, text="Agregar", command=agregar_producto).grid(row=1, column=5)
+tk.Button(frame_inventario, text="Eliminar", command=eliminar_producto).grid(row=1, column=6)
 
-# Filtros para tabla inventario
-tk.Label(frame_inventario, text="Sucursal:").grid(row=0, column=3, sticky="w")
 filtro_sucursal = ttk.Combobox(frame_inventario, values=sucursales)
-filtro_sucursal.current(0)
-filtro_sucursal.grid(row=0, column=4)
+filtro_sucursal.set("Todas")
+filtro_sucursal.grid(row=2, column=0, columnspan=2)
 filtro_sucursal.bind("<<ComboboxSelected>>", cambiar_filtro)
 
-tk.Label(frame_inventario, text="Buscar:").grid(row=1, column=3, sticky="w")
 buscar_entry = tk.Entry(frame_inventario)
-buscar_entry.grid(row=1, column=4)
-buscar_entry.bind("<KeyRelease>", lambda e: actualizar_tabla())
+buscar_entry.grid(row=2, column=2)
+tk.Button(frame_inventario, text="Buscar", command=actualizar_tabla).grid(row=2, column=3)
+tk.Button(frame_inventario, text="Resumen", command=resumen).grid(row=2, column=4)
 
-cols = ("SKU", "Nombre", "Precio", "Stock", "Sucursal")
-tree = ttk.Treeview(frame_inventario, columns=cols, show="headings", height=12)
-for c in cols:
-    tree.heading(c, text=c)
-    tree.column(c, width=100)
-tree.grid(row=6, column=0, columnspan=5, pady=10, padx=10, sticky="nsew")
+tree = ttk.Treeview(frame_inventario, columns=("SKU", "Nombre", "Precio", "Stock", "Sucursal"), show="headings")
+for col in ("SKU", "Nombre", "Precio", "Stock", "Sucursal"):
+    tree.heading(col, text=col)
+tree.grid(row=3, column=0, columnspan=7)
 
-tk.Button(frame_inventario, text="Resumen del Sistema", command=resumen).grid(row=7, column=2, pady=10)
-
-# --- Pestaña Punto de Venta ---
+# --------------------
+# Pestaña: Ventas
+# --------------------
 frame_ventas = ttk.Frame(notebook)
-notebook.add(frame_ventas, text="Punto de Venta")
+notebook.add(frame_ventas, text="Ventas")
 
-tk.Label(frame_ventas, text="Venta: SKU").grid(row=0, column=0, sticky="w")
+tk.Label(frame_ventas, text="SKU").grid(row=0, column=0)
+tk.Label(frame_ventas, text="Cantidad").grid(row=0, column=1)
 venta_sku_entry = tk.Entry(frame_ventas)
-venta_sku_entry.grid(row=0, column=1)
-
-tk.Label(frame_ventas, text="Cantidad").grid(row=1, column=0, sticky="w")
 venta_cantidad_entry = tk.Entry(frame_ventas)
+venta_sku_entry.grid(row=1, column=0)
 venta_cantidad_entry.grid(row=1, column=1)
+tk.Button(frame_ventas, text="Agregar al carrito", command=agregar_al_carrito).grid(row=1, column=2)
+tk.Button(frame_ventas, text="Quitar del carrito", command=quitar_del_carrito).grid(row=1, column=3)
+tk.Button(frame_ventas, text="Confirmar Venta", command=confirmar_venta).grid(row=1, column=4)
 
-tk.Button(frame_ventas, text="Agregar al Carrito", command=agregar_al_carrito).grid(row=2, column=1, pady=5)
-tk.Button(frame_ventas, text="Quitar del Carrito", command=quitar_del_carrito).grid(row=2, column=2, pady=5)
+carrito_tree = ttk.Treeview(frame_ventas, columns=("SKU", "Nombre", "Cantidad", "Precio", "Total"), show="headings")
+for col in ("SKU", "Nombre", "Cantidad", "Precio", "Total"):
+    carrito_tree.heading(col, text=col)
+carrito_tree.grid(row=2, column=0, columnspan=5)
 
-tk.Label(frame_ventas, text="Carrito de Venta").grid(row=3, column=0, columnspan=3)
-carrito_cols = ("SKU", "Nombre", "Cantidad", "Precio Unitario", "Total")
-carrito_tree = ttk.Treeview(frame_ventas, columns=carrito_cols, show="headings", height=12)
-for c in carrito_cols:
-    carrito_tree.heading(c, text=c)
-    carrito_tree.column(c, width=100)
-carrito_tree.grid(row=4, column=0, columnspan=3, pady=10, padx=10, sticky="nsew")
+total_label = tk.Label(frame_ventas, text="Total: $0.00")
+total_label.grid(row=3, column=0, columnspan=5)
 
-total_label = tk.Label(frame_ventas, text="Total: $0.00", font=('Arial', 12, 'bold'))
-total_label.grid(row=5, column=1)
-
-tk.Button(frame_ventas, text="Confirmar Venta", command=confirmar_venta).grid(row=6, column=1, pady=10)
-
-# --- Pestaña Traslado de Productos ---
+# --------------------
+# Pestaña: Traslados
+# --------------------
 frame_traslado = ttk.Frame(notebook)
-notebook.add(frame_traslado, text="Traslado de Productos")
+notebook.add(frame_traslado, text="Traslados")
 
-tk.Label(frame_traslado, text="SKU Producto").grid(row=0, column=0, sticky="w")
+tk.Label(frame_traslado, text="SKU").grid(row=0, column=0)
+tk.Label(frame_traslado, text="Cantidad").grid(row=0, column=1)
+tk.Label(frame_traslado, text="Sucursal destino").grid(row=0, column=2)
+
 traslado_sku_entry = tk.Entry(frame_traslado)
-traslado_sku_entry.grid(row=0, column=1)
-
-tk.Label(frame_traslado, text="Cantidad a trasladar").grid(row=1, column=0, sticky="w")
 traslado_cantidad_entry = tk.Entry(frame_traslado)
+traslado_sucursal_destino = ttk.Combobox(frame_traslado, values=sucursales)
+
+traslado_sku_entry.grid(row=1, column=0)
 traslado_cantidad_entry.grid(row=1, column=1)
+traslado_sucursal_destino.grid(row=1, column=2)
 
-tk.Label(frame_traslado, text="Sucursal destino").grid(row=2, column=0, sticky="w")
-traslado_sucursal_destino = ttk.Combobox(frame_traslado, values=sucursales[1:])
-traslado_sucursal_destino.grid(row=2, column=1)
+tk.Button(frame_traslado, text="Trasladar", command=trasladar_producto).grid(row=1, column=3)
 
-tk.Button(frame_traslado, text="Realizar Traslado", command=trasladar_producto).grid(row=3, column=1, pady=10)
+traslado_log = tk.Text(frame_traslado, height=10, width=60)
+traslado_log.grid(row=2, column=0, columnspan=4)
 
-tk.Label(frame_traslado, text="Productos trasladados:").grid(row=4, column=0, sticky="w")
-traslado_log = tk.Listbox(frame_traslado, height=10, width=50)
-traslado_log.grid(row=5, column=0, columnspan=2, pady=10)
-
-# Ajustar configuración de filas y columnas para que se expanda bien
-for frame in (frame_inventario, frame_ventas, frame_traslado):
-    for i in range(7):
-        frame.rowconfigure(i, weight=1)
-    for j in range(5):
-        frame.columnconfigure(j, weight=1)
-
-# Inicializar tabla al arrancar
+# ====================
+# Inicializar sistema
+# ====================
+cargar_datos()
 actualizar_tabla()
-
+root.protocol("WM_DELETE_WINDOW", lambda: (guardar_datos(), root.destroy()))
 root.mainloop()
